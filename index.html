@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DanFor Elite | Academic Workspace</title>
+    <link rel="manifest" href="manifest.json">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body class="dark-theme">
+<div id="login-screen" class="auth-container">
+    
+    <div id="view-role-selection" class="auth-box" style="text-align: center;">
+        <h1 style="color: var(--accent-gold); margin-bottom: 5px;">DanFor Elite</h1>
+        <p style="color: #888; margin-bottom: 30px; font-size: 0.9rem;">Select your portal to continue</p>
+        
+        <button onclick="switchView('student')" class="primary-btn" style="width: 100%; margin-bottom: 15px; padding: 15px; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; gap: 10px;">
+            <i class="fas fa-user-graduate"></i> Student Portal
+        </button>
+        
+        <button onclick="switchView('mentor')" class="secondary-btn" style="width: 100%; padding: 15px; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; gap: 10px;">
+            <i class="fas fa-user-tie"></i> Mentor Portal
+        </button>
+    </div>
+
+    <div id="view-student-login" class="auth-box" style="display: none;">
+        <button onclick="switchView('roles')" style="background: none; border: none; color: var(--accent-gold); margin-bottom: 20px; font-size: 1rem; cursor: pointer;">
+            <i class="fas fa-arrow-left"></i> Back
+        </button>
+        
+        <h2 style="color: white; margin-bottom: 20px;">Student Access</h2>
+        <input type="email" id="auth-email" placeholder="Student Email Address" />
+        <input type="password" id="auth-password" placeholder="Password" />
+        
+        <div class="auth-buttons">
+            <button id="btn-login" class="primary-btn">Login</button>
+            <button id="btn-signup" class="secondary-btn">Sign Up</button>
+        </div>
+        <p id="auth-error" style="color: #ff4c4c; margin-top: 15px; font-size: 0.85rem; display: none;"></p>
+    </div>
+
+    <div id="view-mentor-login" class="auth-box" style="display: none;">
+        <button onclick="switchView('roles')" style="background: none; border: none; color: var(--accent-gold); margin-bottom: 20px; font-size: 1rem; cursor: pointer;">
+            <i class="fas fa-arrow-left"></i> Back
+        </button>
+        
+        <h2 style="color: white; margin-bottom: 10px;">Mentor Access</h2>
+        <p style="font-size: 0.85rem; color: #888; margin-bottom: 20px;">Enter the student's unique ID to monitor live progress.</p>
+        
+        <input type="text" id="target-student-id" placeholder="Paste Student ID here..." style="width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #333; background: #1a1a1a; color: white;">
+        
+        <button onclick="connectToStudent()" class="primary-btn" style="width: 100%; padding: 12px;">Access Dashboard</button>
+    </div>
+
+</div>
+</div>
+        <div id="partner-portal" class="glass-card mt-2" style="display:none;">
+    <h3 style="color: var(--accent-gold);"><i class="fas fa-handshake"></i> Partner Mode</h3>
+    <p style="font-size: 0.8rem; color: #888;">Enter the Student ID to monitor progress:</p>
+    <input type="text" id="target-student-id" placeholder="Paste Student ID here..." class="form-control mt-1">
+    <button onclick="connectToStudent()" class="btn-primary mt-1">Access Dashboard</button>
+    <button onclick="exitPartnerMode()" class="btn-secondary mt-1">Switch to My Account</button>
+</div>
+    </div>
+    <div class="app-container">
+        <nav class="sidebar">
+            <div class="brand">
+                <h2>DanFor Elite</h2>
+                <span class="version">v2.0 PWA</span>
+            </div>
+            <ul class="nav-links">
+                <li class="active" data-target="dashboard"><i class="fas fa-chart-line"></i> Dashboard</li>
+                <li data-target="tasks"><i class="fas fa-tasks"></i> Focus Tasks</li>
+                <li data-target="gpa"><i class="fas fa-calculator"></i> GPA Estimator</li>
+                <li data-target="mistakes"><i class="fas fa-book-dead"></i> Mistake Log</li>
+            </ul>
+            <div class="sidebar-footer">
+                <button id="theme-toggle" class="btn-secondary"><i class="fas fa-moon"></i> Theme</button>
+                <button id="export-btn" class="btn-primary"><i class="fas fa-file-pdf"></i> Export Data</button>
+</button>
+            </div>
+        </nav>
+
+        <main class="main-content">
+             <button id="logout-btn" style="position: absolute; top: 20px; right: 20px; background: transparent; border: 1px solid #ff4c4c; color: #ff4c4c; padding: 5px 12px; border-radius: 5px; font-size: 0.8rem; cursor: pointer; z-index: 100;">
+        <i class="fas fa-sign-out-alt"></i> Logout
+    </button>
+            
+            <section id="dashboard" class="view-section active animate-fade-in">
+                <header class="view-header" style="flex-direction: column; align-items: flex-start; gap: 15px;">
+                    <div style="display: flex; justify-content: space-between; width: 100%; align-items: flex-end;">
+                        <div>
+                            <h1 id="ai-greeting">Good Afternoon.</h1>
+                            <p id="ai-message" class="subtitle" style="font-weight: 500;">Stay focused. Your goals don't care how you feel.</p>
+                        </div>
+                        <div class="ai-score-card">
+                            <span class="score-label">Smart Performance</span>
+                            <span class="score-value" id="ai-score">0%</span>
+                        </div>
+                    </div>
+                    <button id="whatsapp-share-btn" class="btn-primary" style="background-color: #25D366; color: white; border: none;">
+                        <i class="fab fa-whatsapp" style="font-size: 16px;"></i> Share Proof of Work
+                    </button>
+                </header>
+                
+                <div class="stats-grid">
+                    <div class="stat-card glass">
+                        <i class="fas fa-fire streak-icon"></i>
+                        <div class="stat-info">
+                            <h3>Study Streak</h3>
+                            <p id="streak-count">4 Days</p>
+                        </div>
+                    </div>
+                    <div class="stat-card glass">
+                        <i class="fas fa-check-circle task-icon"></i>
+                        <div class="stat-info">
+                            <h3>Tasks Done</h3>
+                            <p id="tasks-completed">12</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-container glass mt-2">
+                    <h3>Weekly Analytics</h3>
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </section>
+
+            <section id="tasks" class="view-section hidden">
+                
+                <header class="view-header">
+                    <h1>Focus Tasks</h1>
+                </header>
+                
+                <div class="study-pact-container glass mb-2" id="study-pact-box" style="margin-bottom: 24px;">
+                    <h3 style="color: var(--danger);"><i class="fas fa-fire"></i> Today's Study Pact</h3>
+                    <p class="subtitle">What is the consequence if you fail today?</p>
+                    <div class="pact-input-area mt-1" style="display: flex; gap: 10px;">
+                        <input type="text" id="daily-pact-input" placeholder="e.g., I will buy lunch for my roommate..." style="flex: 1;">
+                        <button id="save-pact-btn" class="btn-secondary">Lock It In</button>
+                    </div>
+                    <p id="active-pact-display" class="hidden mt-1" style="color: var(--danger); font-weight: bold; font-size: 14px;"></p>
+                </div>
+                <div class="task-input-area glass">
+                    <input type="text" id="new-task-input" placeholder="Enter a high-priority task...">
+                    <select id="task-priority">
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                    <button id="add-task-btn" class="btn-primary"><i class="fas fa-plus"></i></button>
+                </div>
+                <ul id="task-list" class="task-list mt-2">
+                    </ul>
+            </section>
+<div class="glass-card" style="margin-top: 20px;">
+    <h3 style="color: var(--accent-gold);"><i class="fas fa-file-invoice"></i> Daily Audits</h3>
+    <p style="font-size: 0.8rem; color: #888;">Reflect on your previous day's performance.</p>
+    <div id="reports-list" style="margin-top: 15px;">
+        </div>
+</div>
+            <section id="gpa" class="view-section hidden">
+                <header class="view-header">
+                    <h1>GPA Estimator</h1>
+                    <p class="subtitle">Based on standard 5.0 scale</p>
+                </header>
+                <div class="gpa-calculator glass">
+                    <div class="course-inputs" id="course-inputs">
+                        </div>
+                    <button id="add-course-btn" class="btn-secondary mt-1"><i class="fas fa-plus"></i> Add Course</button>
+                    
+                    <div class="gpa-result mt-2">
+                        <h3>Estimated CGPA: <span id="cgpa-result">0.00</span></h3>
+                    </div>
+                </div>
+            </section>
+
+            <section id="mistakes" class="view-section hidden">
+                <header class="view-header">
+                    <h1>Mistake Log</h1>
+                    <p class="subtitle">Document to avoid repeating</p>
+                </header>
+                <div class="mistake-input-area glass">
+                    <textarea id="new-mistake-input" placeholder="What went wrong and what is the lesson?"></textarea>
+                    <button id="add-mistake-btn" class="btn-primary mt-1">Log Lesson</button>
+                </div>
+                <div id="mistake-list" class="mistake-list mt-2">
+                    </div>
+            </section>
+
+        </main>
+    </div>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    
+    <script src="app.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,395 @@
+/* --- Core Variables --- */
+:root {
+    /* Dark Academia Theme (Default) */
+    --bg-base: #12100e;
+    --bg-surface: #1e1b18;
+    --bg-glass: rgba(30, 27, 24, 0.7);
+    --text-main: #e8e4d9;
+    --text-muted: #a39b8b;
+    --accent-gold: #d4af37;
+    --accent-gold-hover: #b5952f;
+    --border-color: rgba(212, 175, 55, 0.2);
+    --danger: #c0392b;
+    --success: #27ae60;
+}
+
+.light-theme {
+    /* Classic Light Academic Theme */
+    --bg-base: #f4f1ea;
+    --bg-surface: #ffffff;
+    --bg-glass: rgba(255, 255, 255, 0.8);
+    --text-main: #2c3e50;
+    --text-muted: #7f8c8d;
+    --accent-gold: #b5952f;
+    --accent-gold-hover: #8f7625;
+    --border-color: rgba(44, 62, 80, 0.1);
+}
+
+/* --- Resets & Typography --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+h1, h2, h3, .brand h2 {
+    font-family: 'Playfair Display', serif;
+    color: var(--accent-gold);
+}
+
+body {
+    background-color: var(--bg-base);
+    color: var(--text-main);
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* --- Layout --- */
+.app-container {
+    display: flex;
+    height: 100%;
+}
+
+/* --- Sidebar --- */
+.sidebar {
+    width: 260px;
+    background-color: var(--bg-surface);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+}
+
+.brand { margin-bottom: 40px; }
+.brand .version { font-size: 12px; color: var(--text-muted); }
+
+.nav-links { list-style: none; flex: 1; }
+.nav-links li {
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.nav-links li:hover, .nav-links li.active {
+    background-color: var(--bg-base);
+    color: var(--accent-gold);
+    transform: translateX(5px);
+}
+
+.sidebar-footer { display: flex; flex-direction: column; gap: 10px; }
+
+/* --- Main Content --- */
+.main-content {
+    flex: 1;
+    padding: 40px;
+    overflow-y: auto;
+}
+
+.view-section { display: none; }
+.view-section.active { display: block; }
+
+.view-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 30px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 15px;
+}
+
+/* --- Components --- */
+.glass {
+    background: var(--bg-glass);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.btn-primary, .btn-secondary {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    display: flex; align-items: center; gap: 8px; justify-content: center;
+}
+
+.btn-primary { background-color: var(--accent-gold); color: #12100e; }
+.btn-primary:hover { background-color: var(--accent-gold-hover); }
+
+.btn-secondary { background-color: transparent; border: 1px solid var(--border-color); color: var(--text-main); }
+.btn-secondary:hover { background-color: var(--bg-base); }
+
+input, select, textarea {
+    background-color: var(--bg-base);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 12px;
+    border-radius: 8px;
+    outline: none;
+}
+textarea { width: 100%; min-height: 100px; resize: vertical; }
+
+.mt-1 { margin-top: 10px; }
+.mt-2 { margin-top: 24px; }
+
+/* --- Dashboard Specifics --- */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+.stat-card { display: flex; align-items: center; gap: 20px; }
+.stat-card i { font-size: 2rem; color: var(--accent-gold); }
+.ai-score-card { text-align: right; }
+.score-value { font-size: 2rem; font-weight: bold; color: var(--accent-gold); font-family: 'Playfair Display', serif; }
+
+/* --- Animations --- */
+.animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .app-container { flex-direction: column; }
+    .sidebar { width: 100%; height: auto; padding: 15px; border-right: none; border-bottom: 1px solid var(--border-color); }
+    .nav-links { display: flex; overflow-x: auto; margin-bottom: 15px; }
+    .nav-links li { white-space: nowrap; margin-bottom: 0; }
+    .main-content { padding: 20px; }
+}
+/* --- Task Item Styling --- */
+.task-list { list-style: none; }
+
+.task-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    transition: opacity 0.3s ease, transform 0.2s ease;
+}
+
+.task-item.completed { 
+    opacity: 0.5; 
+}
+
+.task-item.completed .task-text {
+    text-decoration: line-through;
+}
+
+.task-content { 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+    font-weight: 500;
+}
+
+.priority-dot { 
+    width: 12px; 
+    height: 12px; 
+    border-radius: 50%; 
+    display: inline-block;
+    box-shadow: 0 0 8px rgba(0,0,0,0.2);
+}
+
+.task-actions { 
+    display: flex; 
+    gap: 8px; 
+}
+
+.empty-state { 
+    text-align: center; 
+    color: var(--text-muted); 
+    font-style: italic; 
+    padding: 20px; 
+}
+/* --- Mistake Log Styling --- */
+.mistake-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-left: 4px solid var(--danger); /* Red line to indicate an error log */
+    background-color: var(--bg-surface);
+}
+
+.mistake-header {
+    color: var(--danger);
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.mistake-text {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-main);
+}
+
+.delete-mistake-btn {
+    align-self: flex-end;
+    padding: 6px 10px;
+    border: none;
+    color: var(--text-muted);
+}
+
+.delete-mistake-btn:hover {
+    color: var(--danger);
+}
+/* --- Chart Container & Canvas Fix --- */
+.chart-container {
+    position: relative; /* This stops the infinite sliding */
+    height: 300px;      /* Locks the height so it doesn't grow */
+    width: 100%;
+    margin-top: 24px;
+    padding: 20px;
+}
+
+.chart-container canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+}
+/* --- GPA Estimator Styling --- */
+.course-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr auto;
+    gap: 10px;
+    align-items: center;
+    background-color: var(--bg-base);
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.course-row input, .course-row select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-surface);
+    color: var(--text-main);
+}
+
+.delete-course-btn {
+    color: var(--danger);
+    background: transparent;
+    border: none;
+    padding: 8px;
+}
+
+.delete-course-btn:hover {
+    background: rgba(192, 57, 43, 0.1);
+}
+
+.gpa-result {
+    text-align: right;
+    font-size: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+@media (max-width: 480px) {
+    .course-row {
+        grid-template-columns: 1fr 1fr;
+    }
+    .course-row .course-name {
+        grid-column: span 2;
+    }
+}
+/* --- Accountability & Tough Love Styles --- */
+.study-pact-container {
+    border-left: 4px solid var(--accent-gold);
+    transition: all 0.3s ease;
+}
+
+.study-pact-container.locked {
+    border-left-color: var(--danger);
+    background: rgba(192, 57, 43, 0.05);
+}
+
+.hidden { display: none !important; }
+
+/* The AI Tough Love Override */
+body.tough-love-mode {
+    --accent-gold: #e74c3c; /* Turns accents red */
+    --accent-gold-hover: #c0392b;
+    --bg-base: #1a0b0b; /* Darker, slightly red background */
+}
+
+body.tough-love-mode #ai-greeting, 
+body.tough-love-mode #ai-score {
+    color: var(--danger);
+}
+/* --- LOGIN SCREEN STYLES --- */
+.auth-container {
+    position: fixed;
+    top: 0; left: 0; 
+    width: 100%; height: 100%;
+    background-color: var(--bg-base); /* Your deep #12100e */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* This forces it to sit on top of everything else */
+}
+
+.auth-box {
+    background-color: #1a1714;
+    padding: 30px 20px;
+    border-radius: 12px;
+    border: 1px solid var(--accent-gold);
+    text-align: center;
+    width: 90%;
+    max-width: 350px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}
+
+.auth-box input {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    background: #0a0807;
+    border: 1px solid #333;
+    color: white;
+    border-radius: 6px;
+    font-family: inherit;
+}
+
+.auth-box input:focus {
+    border-color: var(--accent-gold);
+    outline: none;
+}
+
+.auth-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.auth-buttons button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+}
+
+.primary-btn {
+    background-color: var(--accent-gold);
+    color: #12100e;
+}
+
+.secondary-btn {
+    background-color: transparent;
+    color: var(--accent-gold);
+    border: 1px solid var(--accent-gold);
+}
