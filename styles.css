@@ -417,3 +417,15 @@ body.tough-love-mode #ai-score {
     background: #d4af37;
     border-radius: 10px;
 }
+/* 1. Force the scrollable area to be taller than the screen */
+body {
+    min-height: 110vh !important;
+    padding-bottom: 60px !important;
+    box-sizing: border-box;
+}
+
+/* 2. Fix the "stuck" half-button glitch on Android Chrome */
+html {
+    height: -webkit-fill-available;
+    overflow-y: scroll;
+}
