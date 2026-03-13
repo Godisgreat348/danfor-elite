@@ -550,8 +550,8 @@ const AnalyticsEngine = {
             totalWeight += w;
             if (t.completed) earnedWeight += w;
         });
-
-        // Calculate percentage
+        
+         // Calculate percentage
         return Math.round((earnedWeight / totalWeight) * 100);
     },
 
@@ -850,65 +850,64 @@ document.addEventListener('DOMContentLoaded', () => {
 // MASTER ENGINE: CLOUD READ + AUDIT + JANITOR
 // ==========================================
 
+// --- REPLACE YOUR OLD MASTER ENGINE WITH THIS ---
+
 function startMasterEngine() {
     const user = auth.currentUser;
     if (!user) return;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // The 'Midnight Wall' - Anything created before today is an 'Old Task'
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
 
     db.collection("users").doc(user.uid).collection("tasks")
         .onSnapshot(snapshot => {
-            let yesterdayTasks = [];
-            let todayTasks = [];
+            let tasksByDate = {}; // Groups tasks by their exact day
 
             snapshot.forEach(doc => {
                 const data = doc.data();
-                // Get the task date or use today if missing
+                // Get the exact birth certificate of the task
                 const taskDate = data.createdAt ? data.createdAt.toDate() : new Date();
-                const compareDate = new Date(taskDate);
-                compareDate.setHours(0,0,0,0);
+                const dateKey = taskDate.toDateString(); 
 
-                if (compareDate < today) {
-                    yesterdayTasks.push({ id: doc.id, ...data });
-                } else {
-                    todayTasks.push({ id: doc.id, ...data });
+                // If the task was created before today's midnight, it goes to Audit
+                if (taskDate < todayStart) {
+                    if (!tasksByDate[dateKey]) tasksByDate[dateKey] = [];
+                    tasksByDate[dateKey].push({ id: doc.id, ...data });
                 }
             });
 
-            // 1. If old tasks exist, Audit them before wiping
-            if (yesterdayTasks.length > 0) {
-                const reportDate = yesterdayTasks[0].createdAt.toDate().toDateString();
-                
-                // Detailed Report Logic
-                const breakdown = yesterdayTasks.map(t => ({
-                    task: t.text,
-                    result: t.completed ? "COMPLETED ✅" : "FAILED ❌"
-                }));
-
-                db.collection("users").doc(user.uid).collection("reports").doc(reportDate).set({
-                    date: reportDate,
-                    stats: {
-                        total: yesterdayTasks.length,
-                        done: yesterdayTasks.filter(t => t.completed).length
-                    },
-                    details: breakdown,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                }).then(() => {
-                    // 2. WIPE old tasks only AFTER report is saved
-                    yesterdayTasks.forEach(t => {
-                        db.collection("users").doc(user.uid).collection("tasks").doc(t.id).delete();
-                    });
-                    console.log("🧹 Yesterday's tasks audited and wiped.");
-                });
-            }
-
-            // 3. Update the Screen with only Today's tasks
-            AppState.data.tasks = todayTasks;
-            AppState.save();
-            TaskEngine.renderTasks();
-            try { UI.updateDashboard(); } catch(e) {}
+            // Loop through the grouped days and audit them one by one
+            Object.keys(tasksByDate).forEach(date => {
+                processHardAudit(date, tasksByDate[date]);
+            });
         });
+}
+
+async function processHardAudit(reportDate, tasks) {
+    // 1. Put EVERY single task on the paper. No task is left behind.
+    const breakdown = tasks.map(t => ({
+        task: t.text || t.name,
+        // If it wasn't checked by the deadline, it's a FAIL. No pampering.
+        result: (t.status === "completed" || t.completed === true) ? "COMPLETED ✅" : "FAILED ❌"
+    }));
+
+    // 2. Save the full report to the Vault
+    await db.collection("users").doc(auth.currentUser.uid).collection("reports").doc(reportDate).set({
+        date: reportDate,
+        details: breakdown,
+        stats: {
+            total: tasks.length,
+            done: tasks.filter(t => t.status === "completed" || t.completed === true).length
+        },
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    // 3. WIPE ONLY the tasks that were just saved to the report
+    tasks.forEach(t => {
+        db.collection("users").doc(auth.currentUser.uid).collection("tasks").doc(t.id).delete();
+    });
+    console.log(`Audit complete for ${reportDate}. Saved and wiped.`);
 }
 // --- PDF GENERATOR ENGINE ---
 function downloadPDF(report) {
@@ -1094,7 +1093,7 @@ function loadReportsForPartner(studentId) {
         });
 }
 // --- GLOBAL LOGOUT FIX ---
-// This ensures the logout button works for BOTH Students and Mentors
+ // This ensures the logout button works for BOTH Students and Mentors
 const globalLogoutBtn = document.getElementById('logout-btn');
 if (globalLogoutBtn) {
     globalLogoutBtn.onclick = () => {
