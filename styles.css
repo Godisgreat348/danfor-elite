@@ -393,3 +393,27 @@ body.tough-love-mode #ai-score {
     color: var(--accent-gold);
     border: 1px solid var(--accent-gold);
 }
+
+
+
+/* 2. Fix Layout: Create the scrollable vault for reports */
+#reports-list {
+    max-height: 250px; 
+    overflow-y: auto;  
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+/* 3. Theme: Gold Scrollbar */
+#reports-list::-webkit-scrollbar {
+    width: 6px;
+}
+#reports-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+#reports-list::-webkit-scrollbar-thumb {
+    background: #d4af37;
+    border-radius: 10px;
+}
