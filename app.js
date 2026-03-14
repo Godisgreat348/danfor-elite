@@ -315,6 +315,7 @@ const TaskEngine = {
                     text: text,
                     priority: priority,
                     completed: false
+                    createdAt: new Date()
                 };
                 
                 if (!AppState.data.tasks) AppState.data.tasks = [];
@@ -850,65 +851,51 @@ document.addEventListener('DOMContentLoaded', () => {
 // MASTER ENGINE: CLOUD READ + AUDIT + JANITOR
 // ==========================================
 
-// --- REPLACE YOUR OLD MASTER ENGINE WITH THIS ---
-
-function startMasterEngine() {
+async function startMasterEngine() {
     const user = auth.currentUser;
     if (!user) return;
 
-    // The 'Midnight Wall' - Anything created before today is an 'Old Task'
+    // The 'Midnight Wall' in raw milliseconds
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
+    const todayStartTime = todayStart.getTime();
 
-    db.collection("users").doc(user.uid).collection("tasks")
-        .onSnapshot(snapshot => {
-            let tasksByDate = {}; // Groups tasks by their exact day
+    try {
+        const snapshot = await db.collection("users").doc(user.uid).collection("tasks").get();
+        let tasksByDate = {};
 
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                // Get the exact birth certificate of the task
-                const taskDate = data.createdAt ? data.createdAt.toDate() : new Date();
-                const dateKey = taskDate.toDateString(); 
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            
+            // Step 1: Handle every possible date format correctly
+            let taskDate;
+            if (data.createdAt && typeof data.createdAt.toDate === 'function') {
+                taskDate = data.createdAt.toDate();
+            } else if (data.createdAt) {
+                taskDate = new Date(data.createdAt);
+            } else {
+                // Fail-safe: if no date, treat as yesterday so it doesn't get stuck
+                taskDate = new Date(Date.now() - 86400000);
+            }
 
-                // If the task was created before today's midnight, it goes to Audit
-                if (taskDate < todayStart) {
-                    if (!tasksByDate[dateKey]) tasksByDate[dateKey] = [];
-                    tasksByDate[dateKey].push({ id: doc.id, ...data });
-                }
-            });
+            const taskTime = taskDate.getTime();
+            const dateKey = taskDate.toDateString(); 
 
-            // Loop through the grouped days and audit them one by one
-            Object.keys(tasksByDate).forEach(date => {
-                processHardAudit(date, tasksByDate[date]);
-            });
+            // Step 2: Compare raw numbers (The Solution)
+            if (taskTime < todayStartTime) {
+                if (!tasksByDate[dateKey]) tasksByDate[dateKey] = [];
+                tasksByDate[dateKey].push({ id: doc.id, ...data });
+            }
         });
-}
 
-async function processHardAudit(reportDate, tasks) {
-    // 1. Put EVERY single task on the paper. No task is left behind.
-    const breakdown = tasks.map(t => ({
-        task: t.text || t.name,
-        // If it wasn't checked by the deadline, it's a FAIL. No pampering.
-        result: (t.status === "completed" || t.completed === true) ? "COMPLETED ✅" : "FAILED ❌"
-    }));
-
-    // 2. Save the full report to the Vault
-    await db.collection("users").doc(auth.currentUser.uid).collection("reports").doc(reportDate).set({
-        date: reportDate,
-        details: breakdown,
-        stats: {
-            total: tasks.length,
-            done: tasks.filter(t => t.status === "completed" || t.completed === true).length
-        },
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    // 3. WIPE ONLY the tasks that were just saved to the report
-    tasks.forEach(t => {
-        db.collection("users").doc(auth.currentUser.uid).collection("tasks").doc(t.id).delete();
-    });
-    console.log(`Audit complete for ${reportDate}. Saved and wiped.`);
-}
+        // Step 3: Run the Audit + Universal Wipe
+        for (const date in tasksByDate) {
+            await processUniversalAudit(date, tasksByDate[date]);
+        }
+    } catch (error) {
+        console.error("Engine Sync Error:", error);
+    }
+        }
 // --- PDF GENERATOR ENGINE ---
 function downloadPDF(report) {
     const { jsPDF } = window.jspdf;
