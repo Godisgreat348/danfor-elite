@@ -314,7 +314,7 @@ const TaskEngine = {
                     id: docRef.id, 
                     text: text,
                     priority: priority,
-                    completed: false
+                    completed: false,
                     createdAt: new Date()
                 };
                 
