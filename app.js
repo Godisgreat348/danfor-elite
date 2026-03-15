@@ -900,9 +900,14 @@ async function startMasterEngine() {
         }
         
 
-        alert("✅ Step 6: Engine finished! Wiping ghost memory...");
-        localStorage.clear(); 
-        window.location.reload(); 
+        // --- SMART STEP 6 ---
+        if (tasksToAudit > 0) {
+            alert("✅ Step 6: Engine finished! Wiping ghost memory...");
+            localStorage.clear(); 
+            window.location.reload(); 
+        } else {
+            alert("✅ Step 6: Database is clean. No need to refresh!");
+        }
 
     } catch (error) {
         alert("❌ FATAL CRASH: " + error.message);
