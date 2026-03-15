@@ -852,50 +852,58 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==========================================
 
 async function startMasterEngine() {
+    alert("⚙️ Step 1: Master Engine Waking Up!");
+    
     const user = auth.currentUser;
-    if (!user) return;
+    if (!user) {
+        alert("❌ Step 2 Error: Nobody is logged in. Stopping Engine.");
+        return;
+    }
 
-    // The 'Midnight Wall' in raw milliseconds
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayStartTime = todayStart.getTime();
 
     try {
         const snapshot = await db.collection("users").doc(user.uid).collection("tasks").get();
+        alert(`📦 Step 3: Cloud connected! Found ${snapshot.size} total tasks in your database.`);
+        
         let tasksByDate = {};
+        let tasksToAudit = 0;
 
         snapshot.forEach(doc => {
             const data = doc.data();
-            
-            // Step 1: Handle every possible date format correctly
             let taskDate;
             if (data.createdAt && typeof data.createdAt.toDate === 'function') {
                 taskDate = data.createdAt.toDate();
             } else if (data.createdAt) {
                 taskDate = new Date(data.createdAt);
             } else {
-                // Fail-safe: if no date, treat as yesterday so it doesn't get stuck
                 taskDate = new Date(Date.now() - 86400000);
             }
 
             const taskTime = taskDate.getTime();
             const dateKey = taskDate.toDateString(); 
 
-            // Step 2: Compare raw numbers (The Solution)
             if (taskTime < todayStartTime) {
                 if (!tasksByDate[dateKey]) tasksByDate[dateKey] = [];
                 tasksByDate[dateKey].push({ id: doc.id, ...data });
+                tasksToAudit++;
             }
         });
 
-        // Step 3: Run the Audit + Universal Wipe
+        alert(`🧹 Step 4: Engine identified ${tasksToAudit} old tasks to sweep.`);
+
         for (const date in tasksByDate) {
+            alert(`📝 Step 5: Sending tasks to Vault for ${date}...`);
             await processUniversalAudit(date, tasksByDate[date]);
         }
+        
+        alert("✅ Step 6: Engine finished successfully!");
     } catch (error) {
-        console.error("Engine Sync Error:", error);
+        alert("❌ FATAL CRASH: " + error.message);
     }
-        }
+}
 // --- PDF GENERATOR ENGINE ---
 function downloadPDF(report) {
     const { jsPDF } = window.jspdf;
