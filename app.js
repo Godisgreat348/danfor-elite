@@ -899,10 +899,13 @@ async function startMasterEngine() {
             await processUniversalAudit(date, tasksByDate[date]);
         }
         
-        
+
         alert("✅ Step 6: Engine finished! Wiping ghost memory...");
         localStorage.clear(); 
-        window.location.reload();
+        window.location.reload(); 
+
+    } catch (error) {
+        alert("❌ FATAL CRASH: " + error.message);
     }
 }
 
