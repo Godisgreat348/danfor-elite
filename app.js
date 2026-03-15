@@ -904,6 +904,53 @@ async function startMasterEngine() {
         alert("❌ FATAL CRASH: " + error.message);
     }
 }
+
+// --- THE BROOM (Actually moves tasks to the Vault and deletes them) ---
+async function processUniversalAudit(dateString, pastTasks) {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    // 1. Calculate the score for these old tasks
+    let completedCount = 0;
+    const cleanTasksList = pastTasks.map(t => {
+        if (t.completed) completedCount++;
+        return {
+            text: t.text,
+            completed: t.completed || false,
+            priority: t.priority || 'low'
+        };
+    });
+
+    const total = pastTasks.length;
+    const score = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+
+    // 2. Prepare the Vault Report
+    const reportData = {
+        date: dateString,
+        score: score,
+        tasksExecuted: completedCount,
+        totalTasks: total,
+        tasksList: cleanTasksList,
+        timestamp: new Date().getTime()
+    };
+
+    // 3. Run the Database Sweep (Batch Action)
+    const batch = db.batch();
+    
+    // Save to Vault
+    const reportRef = db.collection("users").doc(user.uid).collection("reports").doc(dateString);
+    batch.set(reportRef, reportData);
+
+    // Delete from Dashboard
+    pastTasks.forEach(task => {
+        const taskRef = db.collection("users").doc(user.uid).collection("tasks").doc(task.id);
+        batch.delete(taskRef);
+    });
+
+    // 4. Execute!
+    await batch.commit();
+}
+
 // --- PDF GENERATOR ENGINE ---
 function downloadPDF(report) {
     const { jsPDF } = window.jspdf;
