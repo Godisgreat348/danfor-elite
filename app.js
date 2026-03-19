@@ -234,36 +234,32 @@ const UI = {
 
     initChart() {
         const ctx = document.getElementById('performanceChart').getContext('2d');
-        // Check if chart exists to destroy it before re-rendering (good practice)
         if(window.myChart) window.myChart.destroy();
-        
+
         window.myChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                // Fixed labels: Starts on Sunday, ends on Saturday
+                labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], 
                 datasets: [{
                     label: 'Productivity Score',
-                    data: AppState.data.weeklyScores || [0, 0, 0, 0, 0, 0, 0], // Placeholder data
-                    borderColor: '#d4af37', // Accent gold
+                    data: [0, 0, 0, 0, 0, 0, 0],
+                    borderColor: '#d4af37',
                     backgroundColor: 'rgba(212, 175, 55, 0.1)',
                     borderWidth: 2,
                     fill: true,
-                    tension: 0.4 // Smooth curves
+                    tension: 0.4
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    y: { beginAtZero: true,
-                    max: 100,
-                     grid: { color: 'rgba(255,255,255,0.05)' } },
-                    x: { grid: { display: false } }
-                },
-                plugins: { legend: { display: false } }
+                    y: { beginAtZero: true, max: 100 }
+                }
             }
         });
-    }
+    },
 };
 
 // --- Task Management Engine ---
@@ -914,34 +910,32 @@ async function startMasterEngine() {
         alert("❌ FATAL CRASH: " + error.message);
     }
 }
-// --- CHART VAULT SYNC ENGINE ---
+// --- CHART VAULT SYNC ENGINE (STATIC WEEK EDITION) ---
 async function syncChartWithVault() {
     const user = auth.currentUser;
     if (!user || !window.myChart) return;
 
     try {
-        // 1. Get all reports from the Vault
         const snapshot = await db.collection("users").doc(user.uid).collection("reports").get();
-        
-        // 2. Create a blank week [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
         let weeklyScores = [0, 0, 0, 0, 0, 0, 0];
         
-        // 3. Find the timestamp for exactly 7 days ago
-        const oneWeekAgo = new Date().getTime() - (7 * 24 * 60 * 60 * 1000);
+        // 1. Find the exact timestamp of THIS WEEK'S SUNDAY at 12:00 AM
+        const now = new Date();
+        const currentDayOfWeek = now.getDay(); // Sunday is 0, Monday is 1...
+        const mostRecentSunday = new Date(now);
+        mostRecentSunday.setDate(now.getDate() - currentDayOfWeek);
+        mostRecentSunday.setHours(0, 0, 0, 0); // Midnight exactly
 
+        // 2. Only plot reports from THIS current week
         snapshot.forEach(doc => {
             const report = doc.data();
+            const reportDate = new Date(report.timestamp);
             
-            // Only plot reports from the last 7 days
-            if (report.timestamp > oneWeekAgo) {
-                // Figure out what day of the week this report was for
-                const reportDate = new Date(report.timestamp);
-                let dayNum = reportDate.getDay(); 
+            // Check if this report belongs to the current week
+            if (reportDate.getTime() >= mostRecentSunday.getTime()) {
                 
-                // Convert JavaScript days (Sun=0) to our Chart days (Mon=0, Sun=6)
-                let chartIndex = dayNum === 0 ? 6 : dayNum - 1; 
+                const dayNum = reportDate.getDay(); // 0 is Sunday, 6 is Saturday
                 
-                // Read the score (works for both new Vault scores and old dummy stats)
                 let finalScore = 0;
                 if (report.score !== undefined) {
                     finalScore = report.score;
@@ -949,20 +943,20 @@ async function syncChartWithVault() {
                     finalScore = Math.round((report.stats.done / report.stats.total) * 100);
                 }
                 
-                // Assign the score to that day on the graph
-                weeklyScores[chartIndex] = finalScore; 
+                // Map the score directly to the correct day of the week
+                weeklyScores[dayNum] = finalScore; 
             }
         });
 
-        // 4. Inject the real data into the chart and update it!
+        // 3. Inject the data into the chart
         window.myChart.data.datasets[0].data = weeklyScores;
         window.myChart.update();
-        console.log("📊 Chart successfully synced with the Vault!");
+        console.log("📊 Chart successfully synced for the current Static Week!");
 
     } catch (error) {
         console.error("Chart Sync Error:", error);
     }
-        }
+}
 // --- THE BROOM (Actually moves tasks to the Vault and deletes them) ---
 async function processUniversalAudit(dateString, pastTasks) {
     const user = auth.currentUser;
