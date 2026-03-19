@@ -39,6 +39,7 @@ auth.onAuthStateChanged(user => {
         console.log("Securely logged in as:", user.email); 
         startMasterEngine();
         loadReports();
+        syncChartWithVault(); 
         // Setup Logout Button
         const logoutBtn = document.getElementById('logout-btn');
         if (logoutBtn) {
@@ -913,7 +914,55 @@ async function startMasterEngine() {
         alert("❌ FATAL CRASH: " + error.message);
     }
 }
+// --- CHART VAULT SYNC ENGINE ---
+async function syncChartWithVault() {
+    const user = auth.currentUser;
+    if (!user || !window.myChart) return;
 
+    try {
+        // 1. Get all reports from the Vault
+        const snapshot = await db.collection("users").doc(user.uid).collection("reports").get();
+        
+        // 2. Create a blank week [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
+        let weeklyScores = [0, 0, 0, 0, 0, 0, 0];
+        
+        // 3. Find the timestamp for exactly 7 days ago
+        const oneWeekAgo = new Date().getTime() - (7 * 24 * 60 * 60 * 1000);
+
+        snapshot.forEach(doc => {
+            const report = doc.data();
+            
+            // Only plot reports from the last 7 days
+            if (report.timestamp > oneWeekAgo) {
+                // Figure out what day of the week this report was for
+                const reportDate = new Date(report.timestamp);
+                let dayNum = reportDate.getDay(); 
+                
+                // Convert JavaScript days (Sun=0) to our Chart days (Mon=0, Sun=6)
+                let chartIndex = dayNum === 0 ? 6 : dayNum - 1; 
+                
+                // Read the score (works for both new Vault scores and old dummy stats)
+                let finalScore = 0;
+                if (report.score !== undefined) {
+                    finalScore = report.score;
+                } else if (report.stats && report.stats.total > 0) {
+                    finalScore = Math.round((report.stats.done / report.stats.total) * 100);
+                }
+                
+                // Assign the score to that day on the graph
+                weeklyScores[chartIndex] = finalScore; 
+            }
+        });
+
+        // 4. Inject the real data into the chart and update it!
+        window.myChart.data.datasets[0].data = weeklyScores;
+        window.myChart.update();
+        console.log("📊 Chart successfully synced with the Vault!");
+
+    } catch (error) {
+        console.error("Chart Sync Error:", error);
+    }
+        }
 // --- THE BROOM (Actually moves tasks to the Vault and deletes them) ---
 async function processUniversalAudit(dateString, pastTasks) {
     const user = auth.currentUser;
