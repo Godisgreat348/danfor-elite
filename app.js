@@ -256,6 +256,9 @@ const UI = {
                 maintainAspectRatio: false,
                 scales: {
                     y: { beginAtZero: true, max: 100 }
+                },
+                plugins: {   // <--- ADD THIS BLOCK
+                    legend: { display: false }
                 }
             }
         });
@@ -558,18 +561,17 @@ const AnalyticsEngine = {
         
         const scoreElement = document.getElementById('ai-score');
         if (scoreElement) scoreElement.textContent = `${score}%`;
-        
-        let currentDayNum = new Date().getDay();
-        let chartIndex = currentDayNum === 0 ? 6 : currentDayNum - 1; 
 
-        // 1. Save today's score into the permanent memory array
+        // 1. Match the new Sunday-Saturday math! (Sun=0, Thu=4)
+        let currentDayNum = new Date().getDay(); 
+
         if (!AppState.data.weeklyScores) AppState.data.weeklyScores = [0,0,0,0,0,0,0];
-        AppState.data.weeklyScores[chartIndex] = score;
-        AppState.save(); // Lock it in!
+        AppState.data.weeklyScores[currentDayNum] = score;
+        AppState.save(); 
 
-        // 2. Tell the chart to load the real memory array, not the dummy data
+        // 2. ONLY update today's dot! Leave the Vault's past history alone.
         if (window.myChart) {
-            window.myChart.data.datasets[0].data = AppState.data.weeklyScores;
+            window.myChart.data.datasets[0].data[currentDayNum] = score;
             window.myChart.update();
         }
     }
