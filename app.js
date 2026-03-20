@@ -968,6 +968,69 @@ async function syncChartWithVault() {
         console.error("Chart Sync Error:", error);
     }
             }
+// --- THE DISCIPLINE ENGINE (Missing Days Punisher) ---
+async function enforceDiscipline() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    try {
+        // 1. Get the date you created your account (so it doesn't punish you for days before you joined)
+        const creationDate = new Date(user.metadata.creationTime);
+        creationDate.setHours(0, 0, 0, 0);
+
+        // 2. Grab all reports that already exist in the Vault
+        const snapshot = await db.collection("users").doc(user.uid).collection("reports").get();
+        const existingDates = [];
+        snapshot.forEach(doc => {
+            existingDates.push(doc.id); // e.g., "Wed Mar 18 2026"
+        });
+
+        const batch = db.batch();
+        let penaltiesAdded = 0;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // 3. Scan the last 14 days. If any day is missing, create a Penalty Report!
+        for (let i = 1; i <= 14; i++) {
+            const pastDate = new Date(today.getTime() - (i * 24 * 60 * 60 * 1000));
+            
+            // Stop checking if we go further back than when you created the account
+            if (pastDate.getTime() < creationDate.getTime()) break;
+
+            const dateString = pastDate.toDateString();
+
+            if (!existingDates.includes(dateString)) {
+                const penaltyReport = {
+                    date: dateString,
+                    score: 0,
+                    tasksExecuted: 0,
+                    totalTasks: 1,
+                    tasksList: [{
+                        text: "No task added today, your mentor should take disciplinary action on you.",
+                        completed: false,
+                        priority: "high"
+                    }],
+                    timestamp: pastDate.getTime()
+                };
+
+                const reportRef = db.collection("users").doc(user.uid).collection("reports").doc(dateString);
+                batch.set(reportRef, penaltyReport);
+                penaltiesAdded++;
+            }
+        }
+
+        // 4. Lock penalties in the Vault and refresh the screen to show the zeros
+        if (penaltiesAdded > 0) {
+            await batch.commit();
+            console.log(`🚨 Discipline Engine fired! Added ${penaltiesAdded} penalty reports.`);
+            window.location.reload(); 
+        }
+
+    } catch (error) {
+        console.error("Discipline Engine Error:", error);
+    }
+}
 // --- THE BROOM (Actually moves tasks to the Vault and deletes them) ---
 async function processUniversalAudit(dateString, pastTasks) {
     const user = auth.currentUser;
