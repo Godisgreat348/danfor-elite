@@ -968,28 +968,24 @@ async function syncChartWithVault() {
         console.error("Chart Sync Error:", error);
     }
             }
-// --- THE DISCIPLINE ENGINE (Gap Filler Edition) ---
+// --- THE DISCIPLINE ENGINE (Swiss Cheese Scanner) ---
 async function enforceDiscipline() {
     const user = auth.currentUser;
     if (!user) return;
 
     try {
-        console.log("🛡️ Discipline Engine checking for gaps since your last login...");
-        
-        // 1. Get the date you created the account (as a safe starting point)
-        let lastActiveTime = new Date(user.metadata.creationTime).getTime();
+        console.log("🛡️ Discipline Engine scanning the last 7 days for missing reports...");
 
-        // 2. Look in the Vault to find the absolute LAST time you saved a report
+        // 1. Grab all reports that already exist in the Vault
         const snapshot = await db.collection("users").doc(user.uid).collection("reports").get();
         const existingDates = [];
         
         snapshot.forEach(doc => {
             const report = doc.data();
-            if (report.date) existingDates.push(report.date);
-            
-            // Find the most recent day you actually used the app
-            if (report.timestamp && report.timestamp > lastActiveTime) {
-                lastActiveTime = report.timestamp; 
+            if (report.date) {
+                existingDates.push(report.date);
+            } else if (doc.id) {
+                existingDates.push(doc.id);
             }
         });
 
@@ -999,17 +995,15 @@ async function enforceDiscipline() {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // 3. Set our scanner to start the day AFTER your last active report
-        let checkTime = new Date(lastActiveTime);
-        checkTime.setHours(0, 0, 0, 0);
-        checkTime.setDate(checkTime.getDate() + 1); 
+        // 2. Scan EXACTLY the last 7 days for any holes.
+        // Today is Friday. i=2 is Wed. i=4 is Mon.
+        for (let i = 1; i <= 7; i++) {
+            const pastDate = new Date(today.getTime() - (i * 24 * 60 * 60 * 1000));
+            const dateString = pastDate.toDateString();
 
-        // 4. Fill in every single day until it catches up to Today!
-        while (checkTime.getTime() < today.getTime()) {
-            const dateString = checkTime.toDateString();
-
+            // If a specific day (like Mon or Wed) is missing, punish it!
             if (!existingDates.includes(dateString)) {
-                console.log("❌ Missing gap day found! Punishing:", dateString);
+                console.log("❌ Hole found! Generating penalty for:", dateString);
                 
                 const penaltyReport = {
                     date: dateString,
@@ -1021,31 +1015,28 @@ async function enforceDiscipline() {
                         completed: false,
                         priority: "high"
                     }],
-                    timestamp: checkTime.getTime() // Stamps it with the exact missed date
+                    timestamp: pastDate.getTime() 
                 };
 
                 const reportRef = db.collection("users").doc(user.uid).collection("reports").doc(dateString);
                 batch.set(reportRef, penaltyReport);
                 penaltiesAdded++;
             }
-            
-            // Move forward one day to check the next gap
-            checkTime.setDate(checkTime.getDate() + 1);
         }
 
-        // 5. Lock the penalties in the Vault and refresh
+        // 3. Lock penalties in the Vault and refresh
         if (penaltiesAdded > 0) {
             await batch.commit();
-            console.log(`🚨 Gap Filler fired! Locked ${penaltiesAdded} penalty reports into the Vault.`);
+            console.log(`🚨 Scanner fired! Locked ${penaltiesAdded} penalty reports into the Vault.`);
             window.location.reload(); 
         } else {
-            console.log("✅ Gap Filler finished: No missing days between logins!");
+            console.log("✅ Scanner finished: No missing days found in the last week!");
         }
 
     } catch (error) {
         console.error("Discipline Engine Error:", error);
     }
-        }
+}
 // --- THE BROOM (Actually moves tasks to the Vault and deletes them) ---
 async function processUniversalAudit(dateString, pastTasks) {
     const user = auth.currentUser;
