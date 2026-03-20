@@ -38,6 +38,7 @@ auth.onAuthStateChanged(user => {
             loginScreen.style.display = 'none';
         console.log("Securely logged in as:", user.email); 
         startMasterEngine();
+        enforceDiscipline();
         loadReports();
         syncChartWithVault(); 
         // Setup Logout Button
