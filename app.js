@@ -1307,6 +1307,7 @@ async function syncPartnerChart(studentId) {
     try {
         const snapshot = await db.collection("users").doc(studentId).collection("reports").get();
         
+alert("🕵️ Mentor Engine is searching for Student ID: [" + studentId + "]\nTotal reports found in this vault: " + snapshot.size);
         // 1. Calculate THIS WEEK'S Sunday
         const now = new Date();
         const currentDayOfWeek = now.getDay(); // 0 is Sunday, 1 is Monday, etc.
