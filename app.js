@@ -1250,7 +1250,7 @@ function startPartnerEngine(studentId) {
         }
     `;
     document.head.appendChild(lockdownStyle);
-
+  syncPartnerChart(studentId);
     // Load Tasks (Read-Only)
     db.collection("users").doc(studentId).collection("tasks")
         .onSnapshot(snapshot => {
@@ -1297,6 +1297,53 @@ function loadReportsForPartner(studentId) {
             });
         });
 }
+// --- MENTOR PORTAL CHART ENGINE ---
+async function syncPartnerChart(studentId) {
+    // Make sure the chart exists on the screen first
+    if (!window.myChart) return;
+
+    try {
+        // 🛑 THE FIX: We pull from the studentId database, not the Mentor's!
+        const snapshot = await db.collection("users").doc(studentId).collection("reports").get();
+        let weeklyScores = [0, 0, 0, 0, 0, 0, 0];
+        
+        // Find this week's Sunday
+        const now = new Date();
+        const currentDayOfWeek = now.getDay();
+        const mostRecentSunday = new Date(now);
+        mostRecentSunday.setDate(now.getDate() - currentDayOfWeek);
+        mostRecentSunday.setHours(0, 0, 0, 0);
+
+        // Map the student's reports to the chart
+        snapshot.forEach(doc => {
+            const report = doc.data();
+            const actualDateString = report.date ? report.date : report.timestamp;
+            const reportDate = new Date(actualDateString);
+            reportDate.setHours(0, 0, 0, 0);
+            
+            if (reportDate.getTime() >= mostRecentSunday.getTime()) {
+                const dayNum = reportDate.getDay(); 
+                
+                let finalScore = 0;
+                if (report.score !== undefined) {
+                    finalScore = report.score;
+                } else if (report.stats && report.stats.total > 0) {
+                    finalScore = Math.round((report.stats.done / report.stats.total) * 100);
+                }
+                
+                weeklyScores[dayNum] = finalScore; 
+            }
+        });
+
+        // Inject the student's data directly into the Mentor's screen
+        window.myChart.data.datasets[0].data = weeklyScores;
+        window.myChart.update();
+        console.log("📊 Mentor Chart perfectly synced with Student:", studentId);
+
+    } catch (error) {
+        console.error("Mentor Chart Sync Error:", error);
+    }
+            }
 // --- GLOBAL LOGOUT FIX ---
  // This ensures the logout button works for BOTH Students and Mentors
 const globalLogoutBtn = document.getElementById('logout-btn');
