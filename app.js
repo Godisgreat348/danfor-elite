@@ -852,7 +852,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==========================================
 
 async function startMasterEngine() {
-    alert("⚙️ Step 1: Master Engine Waking Up!");
+    console.log("⚙️ Step 1: Master Engine Waking Up!");
     
     const user = auth.currentUser;
     if (!user) {
@@ -866,7 +866,7 @@ async function startMasterEngine() {
 
     try {
         const snapshot = await db.collection("users").doc(user.uid).collection("tasks").get();
-        alert(`📦 Step 3: Cloud connected! Found ${snapshot.size} total tasks in your database.`);
+        console.log(`📦 Step 3: Cloud connected! Found ${snapshot.size} total tasks in your database.`);
         
         let tasksByDate = {};
         let tasksToAudit = 0;
@@ -892,25 +892,25 @@ async function startMasterEngine() {
             }
         });
 
-        alert(`🧹 Step 4: Engine identified ${tasksToAudit} old tasks to sweep.`);
+        console.log(`🧹 Step 4: Engine identified ${tasksToAudit} old tasks to sweep.`);
 
         for (const date in tasksByDate) {
-            alert(`📝 Step 5: Sending tasks to Vault for ${date}...`);
+            console.log(`📝 Step 5: Sending tasks to Vault for ${date}...`);
             await processUniversalAudit(date, tasksByDate[date]);
         }
         
 
         // --- SMART STEP 6 ---
         if (tasksToAudit > 0) {
-            alert("✅ Step 6: Engine finished! Wiping ghost memory...");
+            console.log("✅ Step 6: Engine finished! Wiping ghost memory...");
             localStorage.clear(); 
             window.location.reload(); 
         } else {
-            alert("✅ Step 6: Database is clean. No need to refresh!");
+            console.log("✅ Step 6: Database is clean. No need to refresh!");
         }
 
     } catch (error) {
-        alert("❌ FATAL CRASH: " + error.message);
+        console.log("❌ FATAL CRASH: " + error.message);
     }
 }
 // --- CHART VAULT SYNC ENGINE (BULLETPROOF EDITION) ---
