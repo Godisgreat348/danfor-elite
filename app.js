@@ -1123,7 +1123,15 @@ function downloadPDF(report) {
 
     // SMART ARRAY: Grabs whichever list exists
     const tasksArray = report.tasksList || report.details || [];
+    const isPenalty = tasksArray.length === 1 && tasksArray[0].text && tasksArray[0].text.includes("disciplinary action");
 
+if (isPenalty) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(200, 0, 0); 
+    const splitWarning = doc.splitTextToSize(tasksArray[0].text, 170);
+    doc.text(splitWarning, 20, yPosition);
+} else {
     tasksArray.forEach((item, index) => {
         // If the page is full, start a new one
         if (yPosition > 280) {
@@ -1147,7 +1155,7 @@ function downloadPDF(report) {
 
         yPosition += 10;
     });
-
+}
     // 4. Footer
     doc.setFontSize(10);
     doc.setTextColor(150);
