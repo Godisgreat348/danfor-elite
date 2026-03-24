@@ -1297,30 +1297,35 @@ function loadReportsForPartner(studentId) {
             });
         });
 }
-// --- MENTOR PORTAL CHART ENGINE ---
+// --- MENTOR PORTAL CHART ENGINE (Sync with Student Portal) ---
 async function syncPartnerChart(studentId) {
-    // Make sure the chart exists on the screen first
-    if (!window.myChart) return;
+    if (!window.myChart) {
+        setTimeout(() => syncPartnerChart(studentId), 500); 
+        return;
+    }
 
     try {
-        // 🛑 THE FIX: We pull from the studentId database, not the Mentor's!
         const snapshot = await db.collection("users").doc(studentId).collection("reports").get();
-        let weeklyScores = [0, 0, 0, 0, 0, 0, 0];
         
-        // Find this week's Sunday
+        // 1. Calculate THIS WEEK'S Sunday
         const now = new Date();
-        const currentDayOfWeek = now.getDay();
+        const currentDayOfWeek = now.getDay(); // 0 is Sunday, 1 is Monday, etc.
         const mostRecentSunday = new Date(now);
         mostRecentSunday.setDate(now.getDate() - currentDayOfWeek);
         mostRecentSunday.setHours(0, 0, 0, 0);
 
-        // Map the student's reports to the chart
+        // 2. Standard Sun-Sat labels
+        const labels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        let weeklyScores = [0, 0, 0, 0, 0, 0, 0];
+
+        // 3. Map student reports to the current week
         snapshot.forEach(doc => {
             const report = doc.data();
             const actualDateString = report.date ? report.date : report.timestamp;
             const reportDate = new Date(actualDateString);
             reportDate.setHours(0, 0, 0, 0);
             
+            // Only include reports from this Sunday onwards
             if (reportDate.getTime() >= mostRecentSunday.getTime()) {
                 const dayNum = reportDate.getDay(); 
                 
@@ -1335,15 +1340,16 @@ async function syncPartnerChart(studentId) {
             }
         });
 
-        // Inject the student's data directly into the Mentor's screen
+        // 4. Update the Mentor's chart to match the Student's view
+        window.myChart.data.labels = labels;
         window.myChart.data.datasets[0].data = weeklyScores;
         window.myChart.update();
-        console.log("📊 Mentor Chart perfectly synced with Student:", studentId);
+        console.log("📊 Mentor Chart synced to Student's Weekly View.");
 
     } catch (error) {
         console.error("Mentor Chart Sync Error:", error);
     }
-            }
+                   }
 // --- GLOBAL LOGOUT FIX ---
  // This ensures the logout button works for BOTH Students and Mentors
 const globalLogoutBtn = document.getElementById('logout-btn');
