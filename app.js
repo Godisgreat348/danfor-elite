@@ -1297,7 +1297,7 @@ function loadReportsForPartner(studentId) {
             });
         });
 }
-// --- MENTOR PORTAL CHART ENGINE (X-Ray Edition) ---
+// --- MENTOR PORTAL CHART ENGINE (Student-Matched Edition) ---
 async function syncPartnerChart(studentId) {
     if (!window.myChart) {
         setTimeout(() => syncPartnerChart(studentId), 500); 
@@ -1307,7 +1307,7 @@ async function syncPartnerChart(studentId) {
     try {
         const snapshot = await db.collection("users").doc(studentId).collection("reports").get();
         
-        // 1. Calculate THIS WEEK'S Sunday
+        // 1. Calculate this week's Sunday boundary
         const now = new Date();
         const currentDayOfWeek = now.getDay(); 
         const mostRecentSunday = new Date(now);
@@ -1317,20 +1317,14 @@ async function syncPartnerChart(studentId) {
         const labels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
         let weeklyScores = [0, 0, 0, 0, 0, 0, 0];
         
-        let debugLog = ""; // Our X-Ray Scanner!
-
-        // 2. Sort through the 13 files
+        // 2. Map the reports
         snapshot.forEach(doc => {
             const report = doc.data();
             
-            // Bulletproof Date Reader
-            let reportDate = new Date();
-            if (report.timestamp) {
-                reportDate = new Date(report.timestamp);
-            } else if (report.date) {
-                reportDate = new Date(report.date);
-            }
-            
+            // 🛑 THE FIX: Prioritize the official 'date' label (Tuesday) 
+            // over the exact upload second, exactly like the Student Portal does!
+            const actualDateString = report.date ? report.date : report.timestamp;
+            const reportDate = new Date(actualDateString);
             reportDate.setHours(0, 0, 0, 0);
             
             // 3. Only keep reports from THIS week
@@ -1345,26 +1339,19 @@ async function syncPartnerChart(studentId) {
                 }
                 
                 weeklyScores[dayNum] = finalScore; 
-                debugLog += `-> Accepted ${labels[dayNum]}: ${finalScore}%\n`;
             }
         });
 
-        // 4. Update the graph
+        // 4. Update the graph silently
         window.myChart.data.labels = labels;
         window.myChart.data.datasets[0].data = weeklyScores;
         window.myChart.update();
-
-        // --- THE X-RAY POPUP ---
-        if (debugLog === "") {
-            alert(`🕵️ The vault has ${snapshot.size} files, but the engine rejected ALL of them because it thinks none happened after ${mostRecentSunday.toDateString()}.`);
-        } else {
-            alert(`🕵️ Chart successfully drew these days:\n${debugLog}`);
-        }
+        console.log("📊 Mentor Chart now perfectly matches the Student Chart.");
 
     } catch (error) {
         console.error("Mentor Chart Sync Error:", error);
     }
-    }
+}
 // --- GLOBAL LOGOUT FIX ---
  // This ensures the logout button works for BOTH Students and Mentors
 const globalLogoutBtn = document.getElementById('logout-btn');
