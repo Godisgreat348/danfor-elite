@@ -2,7 +2,7 @@
   "name": "DanFor Elite ToDo App",
   "short_name": "DanFor ToDo",
   "description": "Premium Academic &amp;amp; Performance Tracker",
-  "start_url": "/danfor-elite/index.html",
+  "start_url": ".",
   "display": "fullscreen",
   "background_color": "#12100e",
   "theme_color": "#d4af37",
