@@ -1,13 +1,13 @@
 {
-  "name": "DanFor Elite",
-  "short_name": "DanFor EliteApp",
-  "description": "Premium Academic & Performance Tracker",
-  "start_url": "./index.html",
+  "name": "DanFor Elite ToDo App",
+  "short_name": "DanFor ToDo",
+  "description": "Premium Academic &amp; Performance Tracker",
+  "start_url": "/danfor-elite/",
   "display": "standalone",
   "background_color": "#12100e",
   "theme_color": "#d4af37",
- "icons": [
-   {
+  "icons": [
+    {
       "src": "icon.png",
       "sizes": "192x192",
       "type": "image/png"
@@ -17,5 +17,11 @@
       "sizes": "512x512",
       "type": "image/png"
     }
+  ],
+  "dir": "ltr",
+  "categories": [
+    "education",
+    "productivity",
+    "utilities"
   ]
 }
