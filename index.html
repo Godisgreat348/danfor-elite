@@ -2,127 +2,43 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DANFOR ELITE | Master System</title>
+    <title>DANFOR ELITE</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body class="dark-theme">
-
     <div id="login-screen" class="portal-overlay">
-        <div class="auth-card glass animate-fade-in">
-            
-            <div id="view-role-selection">
-                <h1 class="glitch-text">DANFOR ELITE</h1>
-                <p class="subtitle">System Authorization Required</p>
-                <div class="portal-buttons">
-                    <button class="btn-primary" onclick="switchView('student')">
-                        <i class="fas fa-user-graduate"></i> STUDENT PORTAL
-                    </button>
-                    <button class="btn-secondary mt-1" onclick="switchView('mentor')">
-                        <i class="fas fa-user-shield"></i> MENTOR PORTAL
-                    </button>
-                </div>
-            </div>
-
-            <div id="view-student-login" class="hidden">
-                <h2>Student Access</h2>
-                <div class="input-group">
-                    <input type="email" id="auth-email" placeholder="Email Address">
-                    <input type="password" id="auth-password" placeholder="Master Key">
-                </div>
-                <button id="btn-login" class="btn-primary">UNSEAL VAULT</button>
-                <button id="btn-signup" class="btn-ghost mt-1">Initialize New Account</button>
-                <p id="auth-error" class="error-text hidden"></p>
-                <button class="btn-back mt-1" onclick="switchView('roles')">← Back</button>
-            </div>
-
-            <div id="view-mentor-login" class="hidden">
-                <h2>Mentor Audit</h2>
-                <p>Secure Link Establishment</p>
-                <input type="text" id="target-student-id" placeholder="Paste Student ID Here">
-                <button onclick="connectToStudent()" class="btn-primary">START REMOTE AUDIT</button>
-                <button class="btn-back mt-1" onclick="switchView('roles')">← Back</button>
-            </div>
+        <div id="view-role-selection">
+            <button onclick="switchView('student')">STUDENT</button>
+            <button onclick="switchView('mentor')">MENTOR</button>
+        </div>
+        <div id="view-student-login" class="hidden">
+            <input type="email" id="auth-email">
+            <input type="password" id="auth-password">
+            <button id="btn-login">LOGIN</button>
+            <button id="btn-signup">SIGNUP</button>
+            <p id="auth-error"></p>
+        </div>
+        <div id="view-mentor-login" class="hidden">
+            <input type="text" id="target-student-id" placeholder="Student ID">
+            <button onclick="connectToStudent()">CONNECT</button>
         </div>
     </div>
 
-    <div id="app-content">
-        <nav class="glass">
-            <div class="logo">DANFOR <span>ELITE</span></div>
-            <ul class="nav-links">
-                <li class="active" data-target="view-dashboard"><i class="fas fa-home"></i></li>
-                <li data-target="view-tasks"><i class="fas fa-list-check"></i></li>
-                <li data-target="view-mistakes"><i class="fas fa-skull-crossbones"></i></li>
-                <li data-target="view-gpa"><i class="fas fa-graduation-cap"></i></li>
-                <li data-target="view-analytics"><i class="fas fa-chart-pie"></i></li>
-            </ul>
-            <button id="logout-btn" class="logout-icon"><i class="fas fa-power-off"></i></button>
-        </nav>
-
-        <main class="content-area">
-            <section id="view-dashboard" class="view-section active">
-                <div class="welcome-header">
-                    <h1 id="ai-greeting">System Online</h1>
-                    <p id="ai-message">Focus on your mission.</p>
-                </div>
-                <div class="stat-grid">
-                    <div class="stat-card glass">
-                        <small>STREAK</small>
-                        <h2 id="streak-count">0 Days</h2>
-                    </div>
-                    <div class="stat-card glass">
-                        <small>SCORE</small>
-                        <h2 id="ai-score">0%</h2>
-                    </div>
-                </div>
-                <div class="chart-box glass mt-2">
-                    <canvas id="performanceChart"></canvas>
-                </div>
-            </section>
-
-            <section id="view-tasks" class="view-section hidden">
-                <div class="task-input-group glass">
-                    <input type="text" id="new-task-input" placeholder="New Mission...">
-                    <select id="task-priority">
-                        <option value="high">High</option>
-                        <option value="medium">Medium</option>
-                        <option value="low">Low</option>
-                    </select>
-                    <button id="add-task-btn"><i class="fas fa-plus"></i></button>
-                </div>
-                <ul id="task-list" class="mt-2"></ul>
-            </section>
-
-            <section id="view-gpa" class="view-section hidden">
-                <div class="glass p-2">
-                    <h3>GPA Calculator</h3>
-                    <div id="course-inputs"></div>
-                    <button id="add-course-btn" class="btn-secondary mt-1">+ Add Course</button>
-                    <div class="result-box mt-2">
-                        <h4>CURRENT CGPA: <span id="cgpa-result">0.00</span></h4>
-                    </div>
-                </div>
-            </section>
-
-            <section id="view-mistakes" class="view-section hidden">
-                <div class="glass p-2">
-                    <h3>Mistake Log (Anti-Fragile)</h3>
-                    <input type="text" id="new-mistake-input" placeholder="What went wrong?">
-                    <button id="add-mistake-btn" class="btn-primary mt-1">Log Mistake</button>
-                    <div id="mistake-list" class="mt-2"></div>
-                </div>
-            </section>
-        </main>
+    <div id="dashboard">
+        <h1 id="ai-greeting">Welcome</h1>
+        <p id="ai-message">System Ready</p>
+        <h2 id="streak-count">0 Days</h2>
+        <canvas id="performanceChart"></canvas>
+        <button id="logout-btn">LOGOUT</button>
+        <input type="text" id="new-task-input">
+        <select id="task-priority"><option value="high">High</option></select>
+        <button id="add-task-btn">ADD</button>
+        <ul id="task-list"></ul>
     </div>
-
     <script src="app.js"></script>
 </body>
 </html>
